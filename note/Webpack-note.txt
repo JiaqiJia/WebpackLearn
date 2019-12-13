@@ -1,0 +1,385 @@
+全局安装webpack
+原因： 二次请求多，依赖关系复杂，使用webpack解决以上问题
+
+    使用全局安装 Webpack : npm i webpack -g
+
+webpack 需要基于 node 运行
+
+    安装到项目中： npm i webpack --save-dev
+
+======================================================
+
+在 src 源码根目录下有两个入口文件：index.html 和 main.js
+这两个文件作为使用 webpack 下的 app 接口。
+
+在 node 中，一个模块（module）是指能够被 node require() 
+方法加载的文件或者文件夹
+为了能够被 require() 方法加载，需要：
+            1. 文件夹中有 package.json 文件， 文件中包含 main 项
+    或者    2. 包含 index.js 的文件
+    或者    3. 一个 .js 文件
+
+npm 的更新比 node 要频繁，更新 npm 命令：
+    npm install npm@latest -g 
+
+更新本地安装的包：
+    在 package.json 所在文件夹 运行： 
+        npm update
+    
+    package 文件的版本号表示规则： X.X.X ==> major.minor.patch
+
+        (1). < , <= , > , >=  |》比较器：表示大于（等于）或小于（等于）某版本 
+            (1.1). ||         |》 用来组合比较器
+        (2). ~                |》表示除x了 patch 级别，其他表明的级别版本号不向上更新
+        (3). ^                |》版本号中最左边的非0数字的右侧可以任意
+                                 如果缺少某个版本号，则这个版本号的位置可以任意
+        (4). *                |》匹配任何版本版本
+        (5). x                |》所在的位置可以匹配任意版本
+        (6). -                |》大于等于左，小于等于右
+
+使用 npm install 命令， 如果没有加参数：
+    npm 会根据 package 文件中的配置将缺失的依赖项全部安装。
+
+=======================================================
+
+webpack 工程建立的步骤：
+    1. 使用命令生成 package.json 项目配置文件：
+        npm init -y  // -y 操作符表示省去询问步骤
+         
+        ** 使用 webpack 时，不要在 head 中再引入额外的链接。
+            在 npm 当中，package 文件的地位非常重要，想要将
+            工程打包为 npm 包，该配置文件必须存在。
+
+            package.json 文件：
+
+            * 列出了工程依赖的包
+            * 可以表明包的版本
+            * 帮助项目更容易复制传播
+
+    
+    2. 在工程中，使用 npm 相关命令添加工程依赖：
+        npm i <projectname> --save | -S | --save-dev | -D
+    
+    3. 安装的 npm 包在 文件夹 node_module 当中
+
+    4. 在 main.js 中使用 node require() 方法 或者使用 ES 6 语法：
+            import *** from ***（string类） ， 引入其他包
+    
+    5. 但是一般浏览器只支持 ES 5， 需要使用 webpack 工具编译
+
+    6. 使用 webpack 编译： 
+            webpack .\src\main.js .\dist\bundle.js
+
+            这样会把main 文件编译成 bundle 文件， 该文件就可以被浏览器使用
+    
+    7. 编写 webpack.config.js 文件可以自动化 webpack 打包
+        7.1 内容中编写： 手动指定 入口和出口
+            使用 node 语法
+            
+            const path = require('path')
+            module.exports = {
+                entry: path.join(__dirname, './src/main.js'),
+                output: {
+                    path: path.join(__dirname, './dist'),
+                    filename: 'bundle.js'
+                }
+            }
+
+        7.2 保存后，直接在控制台输入 webpack 就可以运行并自动打包 
+
+=======================================================
+
+webpack-dev-server 的使用与配置
+    1. 运行 npm i webpack-dev-server -D 添加本地开发依赖
+
+        ****** 注：（重要） webpack-dev-server 要求本地也安装
+                    webpack 包，全局安装不起作用！！！
+
+    2. 工具用法和 webpack 完全一样
+
+    3. 本地包的命令行配置
+        package 文件中 配置 "scripts" 项， 添加
+        "dev": "webpack-dev-server"
+
+        使用 npm run dev 就可以运行该子项目
+
+    4. 配置 webpack-dev-server: 
+        在 package.json ==> scripts 中传递参数
+            "dev": "webpack-dev-server --open --port 3000 --contentbase src --hot"
+    
+    5. dev-server 中的 bundle.js 文件在内存中储存， 虚拟路径在：
+        <url>/bundle.js 
+
+    6. webpack-dev-server 中除了可以在package.json 中配置命令行。
+        其执行参数也可以在 webpack.config.js 中配置
+
+        const webpack = require('webpack') // 启用热更新的第二步
+        module.exports = {
+            ......//添加过的webpack 配置
+
+            devServer: {
+                open: true,
+                port: 3000,
+                contentBase: 'src',
+                hot: true //启用热更新，这是第一步
+            }，
+            plugins: [
+                new webpack.hotModuleReplacementPlugin()  //热更新第三步，启用模块对象
+            ]
+
+        } 
+
+        如此即便没有命令配置也能达到复杂命令行的效果
+
+    7. 把页面也放到内存里面去
+        npm i html-webpack-plugin -D
+        
+        在 webpack.config.js 中：
+
+            ......//其他的内容
+            //只要是插件，必须都放在plugins 里
+            const htmlWebpackPlugin = require('html-webpack-plugin')
+            module.exports = {
+                ...
+                plugins: [
+                    new webpack.hotModuleReplacementPlugin(),  //热更新第三步，启用模块对象
+                    
+                    new htmlWebpackPlugin({
+                        template: path.join(__dirname, './src/index.html'),
+                        filename: 'index.html'
+                    })
+                ]
+            }
+        
+        ** 为什么使用： 使用了 html-webpack-plgin 后，自动在内存中生成指定页面的拷贝，
+                        并且在内存页面中正确引用 生成地bundle.js 文件
+
+    8. 项目中添加 css 文件
+        在 main.js 中， 使用 import 语法 导入样式表：
+            import './css/index.css'
+
+        ** webpack 默认只能打包处理 js 文件，如果要处理非 js 文件，需要手动安装第三方加载器
+            处理 css 文件需要安装 style-loader 和 css-loader 两个加载器
+    
+        8.1. webpack.config.js 中配置：
+
+            const...
+            module.exports = {
+                
+                ...
+                plugins: [...],
+                module: {  //这个节点用于配置所有第三方模块 - 加载器
+                    rules: [  //第三方模块的匹配规则
+                        { test: /\.css$/, use: ['style-loader', 'css-loader']}
+                        //调用顺序，从右向左， 即，先 css-loader 把结果交给 style-loader 最后返回结果
+                    ]
+                }
+            }
+    
+    9. 项目中添加 less 文件
+
+        安装： 
+            npm i less -D 
+            npm i less-loader -D 
+
+        在 main.js 中： 
+
+        import './css/index.css'
+        import './css/index.less'
+
+        在 package.json 中配置：
+            const...
+            module.exports = {
+                
+                ...
+                plugins: [...],
+                module: {  //这个节点用于配置所有第三方模块 - 加载器
+                    rules: [  //第三方模块的匹配规则
+                        { test: /\.css$/, use: ['style-loader', 'css-loader']},
+                        //调用顺序，从右向左， 即，先 css-loader 把结果交给 style-loader 最后返回结果
+                        { test: /\.less$/, use: ['style-loader', 'css-loader', 'less-loader']}
+                    ]
+                }
+            }
+    
+    10. 项目中添加 .scss 文件
+
+        安装： 
+            npm i node-sass -D 
+            npm i sass-loader -D 
+
+
+        在 main.js 中： 
+
+        import './css/index.css'
+        import './css/index.less'
+        import './css/index.scss'
+
+        在 package.json 中配置：
+            const...
+            module.exports = {
+                
+                ...
+                plugins: [...],
+                module: {  //这个节点用于配置所有第三方模块 - 加载器
+                    rules: [  //第三方模块的匹配规则
+                        { test: /\.css$/, use: ['style-loader', 'css-loader']},
+                        //调用顺序，从右向左， 即，先 css-loader 把结果交给 style-loader 最后返回结果
+                        { test: /\.less$/, use: ['style-loader', 'css-loader', 'less-loader']}
+                        { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader']}
+                    ]
+                }
+            }
+
+=======================================================
+    11. 在工程中添加 url-loader
+
+        默认情况下，webpack 无法处理 样式文件中的 url 地址
+
+        安装： 
+            npm i url-loader file-loader -D
+        
+        file 是 url 的内部依赖
+
+        在 package.json 中:
+            const...
+            module.exports = {
+                ...
+                plugins: [...],
+                module: {  //这个节点用于配置所有第三方模块 - 加载器
+                    rules: [  //第三方模块的匹配规则
+                        { test: /\.css$/, use: ['style-loader', 'css-loader']},
+                        //调用顺序，从右向左， 即，先 css-loader 把结果交给 style-loader 最后返回结果
+                        { test: /\.less$/, use: ['style-loader', 'css-loader', 'less-loader']}
+                        { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader']}
+                        //添加规则
+                        { test: /\.(jpg|png|gif|bmp|jpeg)$/, use: 'url-loader'}
+                        //图片会被转为 base64, 若不想转为 base64 ，尤其是对于大的图片：
+                        
+                        //{ test: /\.(jpg|png|gif|bmp|jpeg)$/, use: 'url-loader?limit=<the size if the pic>'} 
+                        //大于等于 limit 的图片不再进行 base64编码 
+                        
+                        //{ test: /\.(jpg|png|gif|bmp|jpeg)$/, use: 'url-loader?limit=<sizeLimit>&name=[hash:8]-[name].[ext]'} 
+                        //保存图片的名字，并用hash（32位）的前8位 来区别同名文件
+
+                    ]
+                }
+            }
+
+=======================================================
+    12. 使用图标的设置
+        安装 bootstrap
+            npm i bootstrap -S
+        
+        在文件 main.js 中：
+            import 'bootstrap/dist/css/bootstrap.css'
+
+        字体文件也要处理，否则报错
+            module.exports = {
+                ...
+                plugins: [],
+                module: {
+                    rules: [
+                        ...,
+                        {test: /\.(ttf|eot|svg|woff|woff2)$/, use: 'url-loader' }
+                    ]
+                }
+            }
+
+
+=======================================================
+    13. Webpack 中使用 Babel 编写 ES6
+        //以在 main.js 中为例： ES 6 的新语法
+        //e.g.
+        class Person {
+            static info = { name: 'zs', age: 20}
+        }
+
+        //以上代码打包会报错，webpack 会编译一部分ES 6 代码，高级的语法和 ES7 是无法处理的，
+        //需要再引入第三方 loader
+
+        //通过 babel 将高级语法转换成低级语法：
+        //安装两套包：
+            npm i babel-core babel-loader babel-plugin-transform-runtime -D 
+            npm i babel-preset-env babel-preset-stage-0 -D 
+
+        打开 webpack.config.js 
+            module.exports = {
+                ...
+                plugins: [],
+                module: {
+                    rules: [
+                        ...,
+                        { test: /\.(ttf|eot|svg|woff|woff2)$/, use: 'url-loader' },
+                        { test: /\.js$/, use: 'babel-loader', exclude: /node_modules/}
+                        //node_modules 中的js文件是打包好的不用再编译，节省资源，必须排除
+                    ]
+                }
+            }
+
+        安装Babel之后在项目的根目录中， 会有 Babel 的配置文件： .babelrc JSON 格式
+        写如下配置: 
+            **babel的插件都是以  'babel-plugin' 开头， 但是配置babel 时， 插件名不加 'babel-plugin'
+                preset 同理
+        {
+            'presets': ["env", "stage-0"],
+            'plugins': ["transform-runtime"]
+        }
+
+
+
+=======================================================
+
+
+*********最终完整的 webpack.config.js 文件 内容*********
+
+const path = require('path')
+const webpack = require('webpack')
+const htmlWebpackPlugin = require('html-webpack-plugin')
+
+module.exports = {
+    entry: path.join(__dirname, './src/main.js'),
+    output: {
+        path: path.join(__dirname, './dist'),
+        filename: 'bundle.js'
+    }，
+    devServer: {
+        open: true,
+        port: 3000,
+        contentBase: 'src',
+        hot: true //启用热更新，这是第一步
+    }，
+    plugins: [
+        new webpack.hotModuleReplacementPlugin()，  //热更新第三步，启用模块对象
+        new htmlWebpackPlugin({
+                        template: path.join(__dirname, './src/index.html'),
+                        filename: 'index.html'
+        })
+    ],
+    module: {  //这个节点用于配置所有第三方模块 - 加载器
+        rules: [  //第三方模块的匹配规则
+            { test: /\.css$/, use: ['style-loader', 'css-loader']},
+            //调用顺序，从右向左， 即，先 css-loader 把结果交给 style-loader 最后返回结果
+            { test: /\.less$/, use: ['style-loader', 'css-loader', 'less-loader']},
+            { test: /\.scss$/, use: ['style-loader', 'css-loader', 'sass-loader']},
+            //添加规则
+            { test: /\.(jpg|png|gif|bmp|jpeg)$/, use: 'url-loader'},
+            //图片会被转为 base64, 若不想转为 base64 ，尤其是对于大的图片：
+            
+            //{ test: /\.(jpg|png|gif|bmp|jpeg)$/, use: 'url-loader?limit=<the size if the pic>'},
+            //大于等于 limit 的图片不再进行 base64编码 
+            
+            //{ test: /\.(jpg|png|gif|bmp|jpeg)$/, use: 'url-loader?limit=<sizeLimit>&name=[hash:8]-[name].[ext]'}, 
+            //保存图片的名字，并用hash（32位）的前8位 来区别同名文件
+            { test: /\.(ttf|eot|svg|woff|woff2)$/, use: 'url-loader' },
+            
+            { test: /\.js$/, use: 'babel-loader', exclude: /node_modules/}
+            //node_modules 中的js文件是打包好的不用再编译，节省资源，必须排除
+        ]
+    }
+}
+
+
+=======================================================
+
+

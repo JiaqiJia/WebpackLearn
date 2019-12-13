@@ -1,0 +1,133 @@
+TOPIC: 如何在Webpack构建的项目中进行Vue的开发
+
+**** 注： 这个只是针对旧版的 vue-cli 类似开发，主要用于理解过程
+过程：
+    1. 安装 vue
+        npm i vue -S
+
+    2. 在 main.js 中： 
+        import Vue from 'vue'
+
+        var vm = new Vue({
+            el: "#app",
+            data: {
+
+            },
+            methods: {
+
+            },
+        })
+
+    //但是，用这种方法导入的包时 runtime-only 的， 功能不完胜
+        2.1 对引入进行更改
+         node包的查找规则： 
+          1. 根目录中查找 node_modules 文件夹；
+          2. 在 node_modules 中，根据包名，找到对应的 vue 文件夹
+          3. 在 vue 文件夹中，找到 package.json 的包配置文件
+          4. 在 package 配置文件中，查找一个 main 属性
+    
+    3. 导入完整版的包
+        方法一， 直接导入完整包的相对路径
+
+        方法二， 在webpack.config.js 配置文件中
+
+            const ...
+            const ...
+            ...
+            
+            module.exports = {
+                entry: ...,
+                output: {...},
+                plugins: [...],
+                module: {
+                    rules: [
+
+                    ]
+                },
+                resolve: {
+                    alias: {
+                        "vue$": "vue/dist/vue.js"  
+                    }
+                }
+            }
+
+    4. 用第一种方法引入包
+
+        开发组件：
+        编写独立的.vue 文件
+
+        内部结构： 
+            <template>
+            <script>
+            <style>
+        
+        在 main 中引入 login 组件
+
+        import login from './login.vue'
+
+    5. 在运行前，安装loader
+        npm i vue-loader vue-template-compiler -D
+
+        在 package.config.js 的 module-> rules 中添加：
+            {test: /\.vue$/, use: 'vue-loader'}
+        
+        但是还会报错，解决方法： 
+
+        在vue实例中添加 render 函数： 
+            var vm = new Vue({
+                ...
+                render: function(createEle) {
+                    return createEle(login)
+                }
+            })
+        
+        主页面中的容器作为应用入口， 引入入口组件
+
+==========================================================
+            **export default 和 export 使用方法
+
+    1. 在 .vue 文件中。
+        <script>
+            export default {
+                data() {
+                    return {
+                        msg: "123"
+                    };
+                },
+
+                methods: {
+                    show() {
+                        console.log("调用了组件中的 show 方法")；
+                    }
+                }
+            }；
+        </script>
+
+        1.1. 在node中的暴露方式
+            module.exports = {} 或
+            exports
+
+            node中的引入方式：
+            var XXX = require("模块标识符")
+        
+        1.2. ES 6 引入和暴露对象
+            引入： 
+                import XXX from "XXX"(模块标识符或者路径)
+                import "XXX"(表示路径)
+            导出：
+                export default {...}
+                export //export 暴露的成员必须用 {var1, var2...} 的形式导出 而且变量名字必须保持一致
+                        //可以给别名 使用 as 关键字
+    
+    2. 在复杂项目中使用子路由
+
+    3. 样式标签中的 scoped lang 属性
+
+        scoped 属性不修改父组件
+        
+        使用其他样式语言： 
+                lang="scss | less"
+
+    4. 路由模块的抽离
+        创建 router.js 在main.js 同级的位置
+
